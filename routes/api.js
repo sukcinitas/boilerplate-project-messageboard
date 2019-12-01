@@ -12,9 +12,10 @@ var expect = require("chai").expect;
 var MongoClient = require("mongodb").MongoClient;
 var ObjectId = require("mongodb").ObjectID;
 const MONGODB_CONNECTION_STRING = process.env.DB;
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 module.exports = function(app) {
-  
   var db;
   MongoClient.connect(MONGODB_CONNECTION_STRING, function(err, database) {
     if (err) throw err;
@@ -23,23 +24,25 @@ module.exports = function(app) {
 
   app
     .route("/api/threads/:board")
-    .post(async function(req, res) {
+    .post(function(req, res) {
       try {
-        await db.collection("threads").insertOne(
-          {
-            board: req.params.board,
-            text: req.body.text,
-            delete_password: req.body.delete_password,
-            reported: false,
-            replies: [],
-            created_on: new Date(),
-            bumped_on: new Date()
-          },
-          err => {
-            if (err) console.log(err);
-            res.redirect(`/b/${req.params.board}/`);
-          }
-        );
+        bcrypt.hash(req.body.delete_password, saltRounds, async (err, hash) => {
+          await db.collection("threads").insertOne(
+            {
+              board: req.params.board,
+              text: req.body.text,
+              delete_password: hash,
+              reported: false,
+              replies: [],
+              created_on: new Date(),
+              bumped_on: new Date()
+            },
+            err => {
+              if (err) console.log(err);
+              res.redirect(`/b/${req.params.board}/`);
+            }
+          );
+        });
       } catch (err) {
         console.log(err);
       }
@@ -82,17 +85,22 @@ module.exports = function(app) {
           .findOne({ _id: ObjectId(req.body.thread_id) }, function(err, data) {
             if (err) console.log(err);
             if (data) {
-              if (req.body.delete_password === data.delete_password) {
-                db.collection("threads").deleteOne(
-                  { _id: ObjectId(req.body.thread_id) },
-                  err => {
-                    if (err) console.log(err);
-                    res.send("success");
+              bcrypt.compare(
+                req.body.delete_password,
+                data.delete_password,
+                async (err, result) => {
+                  if (result) {
+                    await db
+                      .collection("threads")
+                      .deleteOne({ _id: ObjectId(req.body.thread_id) }, err => {
+                        if (err) console.log(err);
+                        res.send("success");
+                      });
+                  } else {
+                    res.send("incorrect password");
                   }
-                );
-              } else {
-                res.send("incorrect password");
-              }
+                }
+              );
             }
           });
       } catch (err) {
@@ -121,49 +129,49 @@ module.exports = function(app) {
     .route("/api/replies/:board")
     .get(async function(req, res) {
       try {
-        await db
-          .collection("threads")
-          .aggregate(
-            [
-              { $match: { _id: ObjectId(req.query.thread_id) } },
-              {
-                $project: {
-                  delete_password: 0,
-                  reported: 0,
-                  "replies.delete_password": 0,
-                  "replies.reported": 0
-                }
+        await db.collection("threads").aggregate(
+          [
+            { $match: { _id: ObjectId(req.query.thread_id) } },
+            {
+              $project: {
+                delete_password: 0,
+                reported: 0,
+                "replies.delete_password": 0,
+                "replies.reported": 0
               }
-            ],
-            (err, data) => {
-              if (err) console.log(err);
-              res.send(data[0]);
             }
-          );
+          ],
+          (err, data) => {
+            if (err) console.log(err);
+            res.send(data[0]);
+          }
+        );
       } catch (err) {
         console.log(err);
       }
     })
 
-    .post(async function(req, res) {
+    .post(function(req, res) {
       try {
+        bcrypt.hash(req.body.delete_password, saltRounds, async (err, hash) => {
           let reply = {
-          _id: ObjectId(),
-          text: req.body.text,
-          delete_password: req.body.delete_password,
-          created_on: new Date(),
-          reported: false
-        };
-        await db
-          .collection("threads")
-          .findOneAndUpdate(
-            { _id: ObjectId(req.body.thread_id) },
-            { $push: { replies: reply }, $set: { bumped_on: new Date() } },
-            (err, data) => {
-              if (err) console.log(err);
-              res.redirect(`/b/${req.params.board}/${req.body.thread_id}`);
-            }
-          );
+            _id: ObjectId(),
+            text: req.body.text,
+            delete_password: hash,
+            created_on: new Date(),
+            reported: false
+          };
+          await db
+            .collection("threads")
+            .findOneAndUpdate(
+              { _id: ObjectId(req.body.thread_id) },
+              { $push: { replies: reply }, $set: { bumped_on: new Date() } },
+              (err, data) => {
+                if (err) console.log(err);
+                res.redirect(`/b/${req.params.board}/${req.body.thread_id}`);
+              }
+            );
+        });
       } catch (err) {
         console.log(err);
         res.send("Did not succeed");
@@ -188,28 +196,46 @@ module.exports = function(app) {
 
     .delete(async function(req, res) {
       try {
-        await db
-          .collection("threads")
-          .updateOne(
-            {
-              _id: ObjectId(req.body.thread_id),
-              replies: {
-                $elemMatch: {
-                  _id: ObjectId(req.body.reply_id),
-                  delete_password: req.body.delete_password
-                }
-              }
-            },
-            { $set: { "replies.$.text": "[deleted]" } },
-            (err, data) => {
-              if (err) console.log(err);
-              if (data.modifiedCount === 0) {
-                res.send("incorrect password");
-              } else {
-                res.send("success");
+        await db.collection("threads").findOne(
+          {
+            _id: ObjectId(req.body.thread_id),
+            replies: {
+              $elemMatch: {
+                _id: ObjectId(req.body.reply_id)
               }
             }
-          );
+          },
+          (err, data) => {
+            if (err) console.log(err);
+            if (data) {
+              bcrypt.compare(
+                req.body.delete_password,
+                data.delete_password,
+                async (err, result) => {
+                  if (result) {
+                    await db.collection("threads").updateOne(
+                      {
+                        _id: ObjectId(req.body.thread_id),
+                        replies: {
+                          $elemMatch: {
+                            _id: ObjectId(req.body.reply_id)
+                          }
+                        }
+                      },
+                      { $set: { "replies.$.text": "[deleted]" } },
+                      (err, data) => {
+                        if (err) console.log(err);
+                        res.send("success");
+                      }
+                    );
+                  } else {
+                    res.send("incorrect password");
+                  }
+                }
+              );
+            }
+          }
+        );
       } catch (err) {
         res.send("did not succeed");
         console.log(err);
