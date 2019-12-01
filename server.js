@@ -2,9 +2,8 @@
 
 var express     = require('express');
 var bodyParser  = require('body-parser');
-var expect      = require('chai').expect;
 var cors        = require('cors');
-
+var helmet      = require('helmet'); 
 var apiRoutes         = require('./routes/api.js');
 var fccTestingRoutes  = require('./routes/fcctesting.js');
 var runner            = require('./test-runner');
@@ -17,6 +16,10 @@ app.use(cors({origin: '*'})); //For FCC testing purposes only
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(helmet.dnsPrefetchControl());//does not allow dns prefetching
+app.use(helmet.frameguard({action: 'allow-from', domain: 'http://glitch.com'}));//only allows site to be loading in an iFrame on my own pages 
+app.use(helmet.referrerPolicy({ policy: 'same-origin' }));//only allows site to send referrer for my own pages
 
 //Sample front-end
 app.route('/b/:board/')
