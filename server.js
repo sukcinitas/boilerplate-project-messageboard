@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(helmet.dnsPrefetchControl());//does not allow dns prefetching
-app.use(helmet.frameguard({action: 'allow-from', domain: 'http://glitch.com'}));//only allows site to be loading in an iFrame on my own pages 
+app.use(helmet.frameguard({action: 'allow-from', domain: 'https://painted-potencial.glitch.me'}));//only allows site to be loading in an iFrame on my own pages 
 app.use(helmet.referrerPolicy({ policy: 'same-origin' }));//only allows site to send referrer for my own pages
 
 //Sample front-end
