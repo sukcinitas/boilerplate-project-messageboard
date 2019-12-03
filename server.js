@@ -18,11 +18,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(helmet.dnsPrefetchControl());//does not allow dns prefetching
-app.use(helmet.frameguard({action: 'sameorigin'}));//only allows site to be loading in an iFrame only on my own pages
+app.use(helmet.frameguard({action: 'allow-from', domain: '*.https://painted-potential.glitch.me'}));//only allows site to be loading in an iFrame only on my own pages
 app.use(helmet.contentSecurityPolicy({
  directives: {
-   frameAncestors: ["'self'"], //a plus to helmet.frameguard to include most possible browsers
-   scriptSrc: ["'self'"],
+   frameAncestors: ["'self'", 'https://*.painted-potential.glitch.me'], //a plus to helmet.frameguard to include most possible browsers
    objectSrc: ["'none'"]
  }
 }));
