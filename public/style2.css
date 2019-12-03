@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css?family=Oswald:300|Teko&display=swap');
+:root {
+  --details: #A5668B;
+  --text: #69306D;
+  --headings: black;
+  --thread: grey;
+}
+* {
+  box-sizing: border-box;
+  margin: 0px;
+  padding: 0px;
+}
+
+body {
+  font-family: 'Oswald', sans-serif;
+  padding: 10px;
+  color: var(--headings);
+}
+
+header h1 {
+  text-align: center;
+  font-family: "Teko", sans-serif;
+  padding: 30px;
+  font-size: 40px;
+}
+
+/*Submit a new Thread*/
+div#submitNewThread {
+  margin: 0 auto;
+  width: 50%;
+}
+
+div#submitNewThread h3 {
+  font-variant: small-caps;
+  padding: 0;
+}
+
+div#submitNewThread textarea{
+  width: 100%;
+  margin: 1px;
+}
+/*********/
+textarea, input {
+  background-color: transparent;
+  color: var(--text);
+  font-family: 'Oswald', sans-serif;
+  padding: 3px 10px;
+  border: 1px solid var(--details);
+  margin: 1px;
+}
+textarea:focus, input:focus {
+  border: 1px solid var(--text);
+  outline: none;
+}
+
+input[type='submit'] {
+  background-color: var(--details);
+  color: var(--bg);
+}
+
+input[type='submit']:focus {
+  background-color: var(--text);
+  outline: none;
+}
+a {
+  color: #69306D;
+}
+h3, h5, p {
+  margin: 5px;
+}
+h3 {
+  padding: 10px;
+  font-size: 20px;
+}
+.reply p:last-child {
+  padding: 10px;
+  font-size: 17px;
+}
+.id {
+  font-size: 10px;
+  margin: 5px;
+}
+/**********/
+/*Board Display*/
+div.thread {
+  width: 60%;
+  margin: 30px auto;
+  border: 2px solid var(--thread);
+  padding: 20px;
+}
+div.main {
+  margin: 10px;
+}
+div.replies {
+  margin: 10px;
+  padding: 10px;  
+  margin-left: 100px;
+}
+div.reply {
+  border-left: 1px solid var(--thread);
+  margin: 20px 0;
+  padding: 0 15px;
+}
+div.reply input, div.reply textarea {
+  font-size: 10px;
+}
+div.reply input[type="submit"] {
+  background-color: grey;
+  border: 1px solid grey;
+  font-size: 10px;
+}
+#newReply textarea {
+  width: 100%;
+}
+
+@media only screen and (max-width: 600px) {
+  div#submitNewThread {
+    width: 80%;
+}
+  div.thread {
+    width: 90%;
+    padding: 10px;
+  }
+  div.replies {
+    margin: 0;
+    margin-left: 30px;
+  }
+}
